@@ -17,7 +17,7 @@ st.write("WeTweet is a tool to extract and analyze the Twitter data to get meani
 image = Image.open('images/twitter.jpg')
 st.image(image)
 
-#Pre-process data
+# Pre-process Data
 def preprocess(df):
     df['Hashtags'].fillna('', inplace=True)
     df['Users Mentioned'].fillna('', inplace=True)
@@ -44,8 +44,11 @@ def preprocess(df):
     df.drop('Temp Date', axis=1, inplace=True)
     return df
 
+# Fetch Twitter Data
 def fetch_data(query_string, type):
     # query_string = '(from:TurkeyUrdu)'
+    if type == 'profile':
+        query_string = '(from:' + query_string + ')'
     tweets_list = []
     limits = 1000
     df = pd.DataFrame()
@@ -74,6 +77,12 @@ def fetch_data(query_string, type):
     tweets_df = preprocess(tweets_df)
     return tweets_df
 
+# Download CSV
+@st.cache
+def download_df(df):
+    return df.to_csv().encode('utf-8')
+
+# Visualize General Data
 def visualize(data_df):
     st.title('Twitter Data Analysis')
     # path = 'data/' + keyword + "_data.json"
@@ -96,31 +105,63 @@ def visualize(data_df):
 
     # # Hashtags Graph
     hashtags_graph = hashtags_used(data_df)
+    st.subheader("Hashtags Used in the Tweets")
     st.write(hashtags_graph)
 
     # Tweets per year
     tweets_yearly_graph = tweets_per_year(data_df)
+    st.subheader("Tweets Done Per Year")
     st.write(tweets_yearly_graph)
 
     # Accounts Tweeted Mostly
     accounts_tweeted_graph = accounts_tweeted(data_df)
+    st.subheader("Accounts Majorly Tweeted")
     st.write(accounts_tweeted_graph)
 
     # Accounts Timeline
     accounts_timeline_graph = accounts_timeline(data_df)
+    st.subheader("Accounts Creation Timeline")
     st.write(accounts_timeline_graph)
 
     # Verified Accounts
     verified_acc_graph = verified_accounts(data_df)
+    st.subheader("Verified Accounts Tweeted")
     st.write(verified_acc_graph)
 
     # Verified Accounts Percentage
     verified_acc_prop_graph = verified_accounts_per(data_df)
+    st.subheader("Percentage of Verified / Non Verified Account")
     st.write(verified_acc_prop_graph)
 
-    st.write("Raw Data")
-    st.dataframe(data_df)
+    accounts_mentioned_graph = accounts_mentioned(data_df)
+    st.subheader("Accounts Mostly Mentioned")
+    st.write(accounts_mentioned_graph)
 
+    languages_used_graph = languages_used(data_df)
+    st.subheader("Top Languages Used in the Tweets")
+    st.write(languages_used_graph)
+
+    # Most Liked Tweets
+    most_liked_tweets_tab = most_liked_tweets(data_df)
+    st.subheader("Most Liked Tweets")
+    st.table(most_liked_tweets_tab)
+
+    # Most Retweeted Tweets
+    most_retweeted_tweets_tab = most_retweeted_tweets(data_df)
+    st.subheader("Most Retweeted Tweets")
+    st.table(most_retweeted_tweets_tab)
+
+    # Download Button
+    st.caption("Click the below button to download the data.")
+    csv = download_df(data_df)
+    st.download_button(
+        label="Download Data",
+        data=csv,
+        file_name='data.csv',
+        mime='text/csv',
+    )
+
+# Visualize User Data
 def visualize_user(data_df):
     st.title('Twitter Data Analysis')
     # path = 'data/' + keyword + "_data.json"
@@ -143,14 +184,37 @@ def visualize_user(data_df):
 
     # # Hashtags Graph
     hashtags_graph = hashtags_used(data_df)
+    st.subheader("Hashtags Used in the Tweets")
     st.write(hashtags_graph)
 
     # Tweets per year
     tweets_yearly_graph = tweets_per_year(data_df)
+    st.subheader("Tweets Done Per Year")
     st.write(tweets_yearly_graph)
 
-    st.write("Raw Data")
-    st.dataframe(data_df)
+    accounts_mentioned_graph = accounts_mentioned(data_df)
+    st.subheader("Accounts Mostly Mentioned")
+    st.write(accounts_mentioned_graph)
+
+    # Most Liked Tweets
+    most_liked_tweets_tab = most_liked_tweets(data_df)
+    st.subheader("Most Liked Tweets")
+    st.table(most_liked_tweets_tab)
+
+    # Most Retweeted Tweets
+    most_retweeted_tweets_tab = most_retweeted_tweets(data_df)
+    st.subheader("Most Retweeted Tweets")
+    st.table(most_retweeted_tweets_tab)
+
+    # Download Button
+    st.caption("Click the below button to download the data.")
+    csv = download_df(data_df)
+    st.download_button(
+        label="Download Data",
+        data=csv,
+        file_name='data.csv',
+        mime='text/csv',
+    )
 
 # Siderbar
 st.sidebar.image("images/dfrac_logo.png", width=100)
@@ -181,8 +245,8 @@ else:
         if query.strip != '':
             load_screen = 1
             while load_screen == 1:
-                with st.spinner('Fetching Data'):
-                    type = "general"
+                with st.spinner('Fetching Data, Please Wait!'):
+                    type = "profile"
                     data_df = fetch_data(query, type)
                     load_screen = 0
             visualize_user(data_df)

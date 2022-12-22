@@ -715,3 +715,273 @@ def verified_accounts_per(data_df):
 
     return fig
 
+# Top Accounts Mentioned
+def accounts_mentioned(data_df):
+    username_list = list()
+    id_list = list()
+    for accounts in data_df['Users Mentioned']:
+        for account in accounts:
+            username_list.append(account.username)
+            id_list.append(account.id)
+
+    accounts_mentioned_df = pd.DataFrame({'User Id' : id_list, 'Username' : username_list})
+    
+    top_accounts_mentioned_df = accounts_mentioned_df['Username'].value_counts()
+    top_accounts_mentioned_df = pd.DataFrame(top_accounts_mentioned_df)
+    top_accounts_mentioned_df.reset_index(inplace=True)
+    top_accounts_mentioned_df = top_accounts_mentioned_df.rename(columns= {'index' : 'username', 'Username' : 'count'})
+
+    # Graph
+    labels = ['Accounts']
+    colors = ['rgb(67,67,67)', 'rgb(115,115,115)', 'rgb(49,130,189)', 'rgb(189,189,189)']
+    colors = ['black',] * 25
+    colors[0] = 'rgb(115,115,115)'
+    colors[1] = 'rgb(115,115,115)'
+    colors[2] = 'rgb(115,115,115)'
+    colors[3] = 'lightslategray'
+    colors[4] = 'lightslategray'
+    colors[5] = 'lightslategray'
+    colors[6] = 'lightslategray'
+
+    mode_size = [8, 8, 12, 8]
+    line_size = [2, 2, 4, 2]
+
+    x_data = np.array([top_accounts_mentioned_df['username'].head(25)])
+
+    y_data = np.array([
+        top_accounts_mentioned_df['count'].head(25)
+    ])
+
+    fig = go.Figure()
+
+    # fig = go.Figure(data=[go.Bar(
+    #     x=dghc_user_mention_freq_merged_df['username'].head(10),
+    #     y=dghc_user_mention_freq_merged_df['occurrence'].head(10),
+    #     marker_color=colors, # marker color can be a single color value or an iterable
+    # )])
+
+    for i in range(0, 1):
+        fig.add_trace(go.Bar(x=x_data[i], y=y_data[i],
+            name=labels[i],
+            marker_color=colors,
+    #         text= y_data[i]
+        ))
+
+        # endpoints
+    #     fig.add_trace(go.Scatter(
+    #         x=[x_data[i][0], x_data[i][-1]],
+    #         y=[y_data[i][0], y_data[i][-1]],
+    #         mode='markers',
+    #         marker=dict(color=colors[i], size=mode_size[i])
+    #     ))
+
+    fig.update_layout(
+        xaxis=dict(
+            showline=True,
+            showgrid=False,
+            showticklabels=True,
+            linecolor='rgb(204, 204, 204)',
+            linewidth=2,
+            ticks='outside',
+            tickfont=dict(
+                family='Arial',
+                size=12,
+                color='rgb(82, 82, 82)',
+            ),
+        ),
+        yaxis=dict(
+            showgrid=False,
+            zeroline=False,
+            showline=True,
+            showticklabels=True,
+        ),
+        autosize=True,
+        margin=dict(
+            autoexpand=False,
+            l=100,
+            r=20,
+            t=110,
+        ),
+        showlegend=False,
+        plot_bgcolor='white'
+    )
+
+    annotations = []
+
+    # Adding labels
+    for y_trace, label, color in zip(y_data, labels, colors):
+        # labeling the left_side of the plot
+        annotations.append(dict(xref='paper', x=-0.03, y=y_trace[0],
+                                    xanchor='right', yanchor='middle',
+                                    text='Count ',
+                                    font=dict(family='Arial',
+                                                size=16),
+                                    showarrow=False))
+        # labeling the right_side of the plot
+        annotations.append(dict(xref='paper', x=0.5, y=2.2,
+                                    xanchor='left', yanchor='middle',
+                                    text='',
+                                    font=dict(family='Arial',
+                                                size=16),
+                                    showarrow=False))
+    # Title
+    annotations.append(dict(xref='paper', yref='paper', x=0.0, y=1.10,
+                                xanchor='left', yanchor='bottom',
+                                text='Accounts Mentioned',
+                                font=dict(family='Arial',
+                                            size=30,
+                                            color='rgb(37,37,37)'),
+                                showarrow=False))
+    # Source
+    annotations.append(dict(xref='paper', yref='paper', x=0.5, y=1.08,
+                                xanchor='center', yanchor='top',
+                                text='Accounts who mere mentioned in the tweets maximum number of times ' +
+                                    '<br>  <br>',
+                                font=dict(family='Arial',
+                                            size=12,
+                                            color='rgb(150,150,150)'),
+                                showarrow=False))
+
+    fig.update_layout(annotations=annotations)
+
+    # pyo.plot(fig, filename='save_mathura_masjid_accounts_mentioned.html')
+    # py.plot(fig, filename='save_mathura_masjid_accounts_mentioned')
+
+    return fig
+
+# Most Liked Tweets
+def most_liked_tweets(data_df):
+    most_liked = data_df.sort_values(by=['Total Likes'], ascending=False).head()
+    most_liked = most_liked[['Tweet Id', 'Date', 'Username', 'User Id', 'User Verified', 'Total Likes', 'Tweet Url']]
+    most_liked['User Verified'] = most_liked['User Verified'].apply(lambda x: 'Verified' if x == True else 'Non Verified')
+    most_liked.reset_index(inplace=True, drop=True)
+    return most_liked
+
+# Most Retweeted Tweets
+def most_retweeted_tweets(data_df):
+    most_retweets = data_df.sort_values(by=['Total Retweets'], ascending=False).head()
+    most_retweets = most_retweets[['Tweet Id', 'Date', 'Username', 'User Id', 'User Verified', 'Total Retweets', 'Tweet Url']]
+    most_retweets['User Verified'] = most_retweets['User Verified'].apply(lambda x: 'Verified' if x == True else 'Non Verified')
+    most_retweets.reset_index(inplace=True, drop=True)
+    return most_retweets
+
+# Languages Mostly Used in the Tweets
+def languages_used(data_df):
+    language_df = data_df.Language.value_counts()
+    language_df = pd.DataFrame(language_df)
+    language_df.reset_index(inplace=True)
+    language_df = language_df.rename(columns= {'index' : 'Language', 'Language' : 'count'}) 
+
+    labels = ['Languages']
+    colors = ['rgb(67,67,67)', 'rgb(115,115,115)', 'rgb(49,130,189)', 'rgb(189,189,189)']
+    colors = ['black',] * 25
+    colors[0] = 'crimson'
+    colors[1] = 'crimson'
+    colors[2] = 'crimson'
+    colors[3] = 'lightslategray'
+    colors[4] = 'lightslategray'
+    colors[5] = 'lightslategray'
+    colors[6] = 'lightslategray'
+
+    mode_size = [8, 8, 12, 8]
+    line_size = [2, 2, 4, 2]
+
+    x_data = np.array([language_df['Language'].head(5)])
+
+    y_data = np.array([
+        language_df['count'].head(5)
+    ])
+
+    fig = go.Figure()
+
+    # fig = go.Figure(data=[go.Bar(
+    #     x=dghc_user_mention_freq_merged_df['username'].head(10),
+    #     y=dghc_user_mention_freq_merged_df['occurrence'].head(10),
+    #     marker_color=colors, # marker color can be a single color value or an iterable
+    # )])
+
+    for i in range(0, 1):
+        fig.add_trace(go.Bar(x=x_data[i], y=y_data[i],
+            name=labels[i],
+            marker_color=colors,
+    #         text= y_data[i]
+        ))
+
+        # endpoints
+    #     fig.add_trace(go.Scatter(
+    #         x=[x_data[i][0], x_data[i][-1]],
+    #         y=[y_data[i][0], y_data[i][-1]],
+    #         mode='markers',
+    #         marker=dict(color=colors[i], size=mode_size[i])
+    #     ))
+
+    fig.update_layout(
+        xaxis=dict(
+            showline=True,
+            showgrid=False,
+            showticklabels=True,
+            linecolor='rgb(204, 204, 204)',
+            linewidth=2,
+            ticks='outside',
+            tickfont=dict(
+                family='Arial',
+                size=12,
+                color='rgb(82, 82, 82)',
+            ),
+        ),
+        yaxis=dict(
+            showgrid=False,
+            zeroline=False,
+            showline=True,
+            showticklabels=True,
+        ),
+        autosize=True,
+        margin=dict(
+            autoexpand=False,
+            l=100,
+            r=20,
+            t=110,
+        ),
+        showlegend=False,
+        plot_bgcolor='white'
+    )
+
+    annotations = []
+
+    # Adding labels
+    for y_trace, label, color in zip(y_data, labels, colors):
+        # labeling the left_side of the plot
+        annotations.append(dict(xref='paper', x=-0.03, y=y_trace[0],
+                                    xanchor='right', yanchor='middle',
+                                    text='Count ',
+                                    font=dict(family='Arial',
+                                                size=16),
+                                    showarrow=False))
+        # labeling the right_side of the plot
+        annotations.append(dict(xref='paper', x=0.5, y=2.2,
+                                    xanchor='left', yanchor='middle',
+                                    text='',
+                                    font=dict(family='Arial',
+                                                size=16),
+                                    showarrow=False))
+    # Title
+    annotations.append(dict(xref='paper', yref='paper', x=0.0, y=1.10,
+                                xanchor='left', yanchor='bottom',
+                                text='Languages Mostly Used',
+                                font=dict(family='Arial',
+                                            size=30,
+                                            color='rgb(37,37,37)'),
+                                showarrow=False))
+    # Source
+    annotations.append(dict(xref='paper', yref='paper', x=0.5, y=1.08,
+                                xanchor='center', yanchor='top',
+                                text='Languages mostly used in the tweets ' +
+                                    '<br>  <br>',
+                                font=dict(family='Arial',
+                                            size=12,
+                                            color='rgb(150,150,150)'),
+                                showarrow=False))
+
+    fig.update_layout(annotations=annotations)
+
+    return fig
