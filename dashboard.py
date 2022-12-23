@@ -45,12 +45,12 @@ def preprocess(df):
     return df
 
 # Fetch Twitter Data
-def fetch_data(query_string, type):
+def fetch_data(query_string, type, record_choice):
     # query_string = '(from:TurkeyUrdu)'
     if type == 'profile':
         query_string = '(from:' + query_string + ')'
     tweets_list = []
-    limits = 1000
+    limits = record_choice
     df = pd.DataFrame()
 
     for tweet in sntwitter.TwitterSearchScraper(query_string).get_items():
@@ -225,13 +225,16 @@ query_type = st.sidebar.radio("Choose the type of your query!", ('General', 'Pro
 if query_type == 'General':
     st.write("""## General Query""")
     query = st.text_input('Please enter you query here', help="Enter your query to analyze the data")
+    record_choice = st.radio(
+                    "How many number of records you want to fetch?",
+                    (1000, 5000, 10000, 50000), help="IMPORTANT: Resquesting higher number of records can take more time to fetch data. 50,000 records can take upto 1 hour to fetch data.")
     if st.button("Search"):
         if query.strip != '':
             load_screen = 1
             while load_screen == 1:
                 with st.spinner('Fetching Data'):
                     type = "general"
-                    data_df = fetch_data(query, type)
+                    data_df = fetch_data(query, type, record_choice)
                     load_screen = 0
             visualize(data_df)
 
@@ -241,13 +244,16 @@ else:
     # Profile Query
     st.write("""## Profile Query""")
     query = st.text_input('Please enter the profile of the user', help='Enter the username of the user to analyze the data')
+    record_choice = st.radio(
+                    "How many number of records you want to fetch?",
+                    (1000, 5000, 10000, 50000), help="IMPORTANT: Resquesting higher number of records can take more time to fetch data. 50,000 records can take upto 1 hour to fetch data.")
     if st.button("Search"):
         if query.strip != '':
             load_screen = 1
             while load_screen == 1:
                 with st.spinner('Fetching Data, Please Wait!'):
                     type = "profile"
-                    data_df = fetch_data(query, type)
+                    data_df = fetch_data(query, type, record_choice)
                     load_screen = 0
             visualize_user(data_df)
 
