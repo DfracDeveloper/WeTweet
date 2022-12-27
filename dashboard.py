@@ -241,7 +241,7 @@ if query_type == 'General':
                     data_df = fetch_data(query, type, record_choice)
                     load_screen = 0
             visualize(data_df)
-
+            st.snow()
         else:
             st.error("Please write a query to search!")
 else:
@@ -260,6 +260,6 @@ else:
                     data_df = fetch_data(query, type, record_choice)
                     load_screen = 0
             visualize_user(data_df)
-
+            st.snow()
         else:
             st.error("Please write a query to search!")
