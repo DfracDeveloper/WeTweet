@@ -196,6 +196,10 @@ def visualize_user(data_df):
     st.subheader("Accounts Mostly Mentioned")
     st.write(accounts_mentioned_graph)
 
+    account_network_graph = network_account(data_df)
+    st.subheader("Network of the Account")
+    st.write(account_network_graph)
+
     # Most Liked Tweets
     most_liked_tweets_tab = most_liked_tweets(data_df)
     st.subheader("Most Liked Tweets")

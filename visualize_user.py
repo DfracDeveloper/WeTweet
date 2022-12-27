@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import re
 from PIL import Image
 import glob
+import networkx
 
 # Timeline of the tweets
 def timeline(data_df):
@@ -585,5 +586,160 @@ def languages_used(data_df):
                                 showarrow=False))
 
     fig.update_layout(annotations=annotations)
+
+    return fig
+
+# Network of the Account
+def network_account(data_df):
+    # Quoted users
+    quotes_df = data_df['Quoted Tweet'].value_counts()
+    quotes_df = pd.DataFrame(quotes_df)
+    quotes_df.reset_index(inplace=True)
+    quotes_df = quotes_df.rename(columns= {'index' : 'users', 'Quoted Tweet' : 'count'})
+    quotes_df['users'].replace('', np.nan, inplace=True)
+    quotes_df.dropna(inplace=True)
+    quotes_df['target'] = data_df.Username[0]
+    quotes_df.reset_index(inplace=True, drop=True)
+    quotes_df['users'] = quotes_df['users'].apply(lambda x: str(x).split('/')[3])
+
+    # Mentioned Users
+    username_list = list()
+    id_list = list()
+    for accounts in data_df['Users Mentioned']:
+        for account in accounts:
+            username_list.append(account.username)
+            id_list.append(account.id)
+
+    accounts_mentioned_df = pd.DataFrame({'User Id' : id_list, 'Username' : username_list})
+    accounts_mentioned_df = accounts_mentioned_df['Username'].value_counts()
+    accounts_mentioned_df = pd.DataFrame(accounts_mentioned_df)
+    accounts_mentioned_df.reset_index(inplace=True)
+    accounts_mentioned_df = accounts_mentioned_df.rename(columns= {'index' : 'username', 'Username' : 'count'})
+    accounts_mentioned_df['username'].replace('', np.nan, inplace=True)
+    accounts_mentioned_df.dropna(inplace=True)
+    accounts_mentioned_df['target'] = data_df.Username[0]
+    accounts_mentioned_df.reset_index(inplace=True, drop=True)
+
+    network_edge_list = list()
+    # Quoted users
+    for row in range(0, len(quotes_df.head(100))):
+        source = quotes_df['users'][row]
+        target = quotes_df['target'][row]
+        network_edge_list.append((source, target))
+    # Mentioned users
+    for row in range(0, len(accounts_mentioned_df.head(100))):
+        source = accounts_mentioned_df['username'][row]
+        target = accounts_mentioned_df['target'][row]
+        network_edge_list.append((source, target))
+
+    # nodes edges dataframe
+    node_names = ['source','target']
+    edge_list_df = pd.DataFrame(network_edge_list,columns=node_names)
+
+    unique_edge_list_df = edge_list_df
+
+    # Defining G and nodes
+    G = networkx.from_pandas_edgelist(unique_edge_list_df, 'source', 'target')
+    degrees = dict(networkx.degree(G))
+    networkx.set_node_attributes(G, name='degree', values=degrees)
+    nodes= list(G.nodes)
+    pos = networkx.layout.kamada_kawai_layout(G)
+
+    # defining edges
+    labels = list(G.nodes)
+    N=len(labels)
+
+    Xv=[pos[k][0] for k in labels]
+    Yv=[pos[k][1] for k in labels]
+    Xed=[]
+    Yed=[]
+    edges = G.edges
+
+    for edge in G.edges:
+        Xed+=[pos[edge[0]][0],pos[edge[1]][0], None]
+        Yed+=[pos[edge[0]][1],pos[edge[1]][1], None]
+
+    trace1= go.Scatter(x=Xed,
+               y=Yed,
+               mode='lines',
+               line=dict(width=0.5, color='#888'),
+               hoverinfo='none'
+               )
+    trace2= go.Scatter(x=Xv,
+                y=Yv,
+                text=labels,
+                mode='markers+text',
+                name='net',
+                marker=dict(
+                                showscale=False,
+                                # colorscale options
+                                #'Greys' | 'YlGnBu' | 'Greens' | 'YlOrRd' | 'Bluered' | 'RdBu' |
+                                #'Reds' | 'Blues' | 'Picnic' | 'Rainbow' | 'Portland' | 'Jet' |
+                                #'Hot' | 'Blackbody' | 'Earth' | 'Electric' | 'Viridis' |
+                                colorscale=['#212121', '#009688'],
+                                reversescale=True,
+                                color=[],
+                                size=10,
+                                colorbar=dict(
+                                    thickness=15,
+                                    title='Node Connections',
+                                    xanchor='left',
+                                    titleside='right'
+                                ),
+                                line_width=2
+                                ),
+                hoverinfo='text'
+                )
+    axis=dict(showline=False, # hide axis line, grid, ticklabels and title
+            zeroline=False,
+            showgrid=False,
+            showticklabels=False,
+            title=''
+            )
+    width=800
+    height=800
+
+    node_adjacencies = []
+    node_text = []
+    for node, adjacencies in enumerate(G.adjacency()):
+        node_adjacencies.append(len(adjacencies[1]))
+    #     node_text.append('# of connections: '+str(len(adjacencies[1])))
+
+    trace2.marker.color = node_adjacencies
+
+    fig = go.Figure(data=[trace1, trace2],
+                layout=go.Layout(
+                    title='<br>',
+                    titlefont_size=16,
+                    showlegend=False,
+                    hovermode='closest',
+                    margin=dict(b=20,l=5,r=5,t=40),
+                    annotations=[ dict(
+                                    text="Account's Network",
+                                    showarrow=False,
+                                    xref="paper", yref="paper",
+                                    x=0.005, y=1.06, 
+                                    font=dict(family='Arial',
+                                                size=30,
+                                                color='rgb(37,37,37)'
+                                            ) 
+                                    ),
+                                dict(xref='paper', yref='paper', x=0.5, y=0,
+                                xanchor='center', yanchor='top',
+                                text='Accounts who were mentioned or quoted by the user' +
+                                    '<br>  <br>',
+                                font=dict(family='Arial',
+                                            size=12,
+                                            color='rgb(150,150,150)'),
+                                showarrow=False)
+                                ],
+                    xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                    yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
+                    )
+    fig.update_layout(plot_bgcolor='white')
+    # pyo.plot(fig, filename='nageswara_rao_network.html')
+    # py.plot(fig, filename='nageswara_rao_network')
+
+    # annotations.append()
 
     return fig
